@@ -1,0 +1,452 @@
+import { ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
+import { ActivatedRoute, Route, Router } from '@angular/router';
+import { BehaviorSubject, ReplaySubject, Subject } from 'rxjs';
+import { DeviceService } from './device.service';
+import { pack, unpackFrom } from 'python-struct';
+import { Buffer } from 'buffer';
+
+import {
+  ChartConfiguration,
+  ChartData,
+  ChartEvent,
+  ChartOptions,
+  ChartType,
+} from 'chart.js';
+import { BaseChartDirective } from 'ng2-charts';
+import { XLSXService } from './xlsx.service';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+
+@Component({
+  templateUrl: './device.component.html',
+  styleUrls: ['./device.component.scss'],
+})
+export class DeviceComponent implements OnInit {
+  public device!: USBDevice;
+  public btag = 0;
+
+  @ViewChild(BaseChartDirective) chart: BaseChartDirective | undefined;
+
+  public firstData$: BehaviorSubject<any>;
+  public secondData$: BehaviorSubject<any>;
+  public thirdData$: BehaviorSubject<any>;
+  public fourthData$: BehaviorSubject<any>;
+
+  public lineChartLabels: Array<number>;
+
+  public barChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    scales: {},
+    animation: {
+      duration: 0,
+    },
+  };
+
+  public barChartType: ChartType = 'line';
+
+  public scatterChartOptions: ChartConfiguration<'line'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: true,
+    animation: {
+      duration: 0,
+    },
+    showLine: true,
+    scales: {
+      x: {
+        type: 'linear', // MANDATORY TO SHOW YOUR POINTS! (THIS IS THE IMPORTANT BIT)
+        display: true, // mandatory
+        position: 'bottom',
+      },
+      y: {
+        type: 'linear', // MANDATORY TO SHOW YOUR POINTS! (THIS IS THE IMPORTANT BIT)
+        display: true, // mandatory
+        position: 'bottom',
+      },
+    },
+  };
+
+  public barChartData: ChartData<'line'> = {
+    labels: [],
+    datasets: [
+      { data: [], label: 'Canal 1' },
+      { data: [], label: 'Canal 2' },
+    ],
+  };
+
+  public x: Array<number>;
+
+  public y: Array<number>;
+
+  public z: Array<number>;
+
+  constructor(
+    private _router: Router,
+    private _changeDetectorRef: ChangeDetectorRef,
+    private _activatedRoute: ActivatedRoute,
+    private _xlsxService: XLSXService,
+    private _formBuilder: FormBuilder
+  ) {
+    this.x = new Array();
+    this.y = new Array();
+    this.z = new Array();
+
+    this.firstData$ = new BehaviorSubject([]);
+    this.secondData$ = new BehaviorSubject([]);
+    this.thirdData$ = new BehaviorSubject([]);
+    this.fourthData$ = new BehaviorSubject([]);
+
+    const length = 2507 - 11;
+
+    const z = new Array<number>(length);
+    for (let index = 0; index < z.length; index++) {
+      z[index] = index;
+    }
+
+    this.lineChartLabels = z;
+  }
+
+  async start() {
+    await this.device.open();
+    await this.device.selectConfiguration(1);
+    await this.device.claimInterface(0);
+
+    await this.send('DESE 1');
+    await this.send('*ESE 1');
+    await this.send('*SRE 32');
+    await this.send('HEAD 0');
+    await this.send('DAT INIT');
+    await this.send('*IDN?');
+
+    for (;;) {
+      await this.send('CH1:SCA?;:CH2:SCA?;:HOR:MAI:SCA?');
+      const scales = (await this.receive()).toString().split(';');
+
+      await this.send('DAT:SOU CH1;:CURV?');
+      const pointsCH1 = (await this.receive()).slice(0, -4);
+
+      await this.send('DAT:SOU CH2;:CURV?');
+      const pointsCH2 = (await this.receive()).slice(0, -4);
+
+      await this.send(
+        'MEASU:MEAS1?;:MEASU:MEAS1:VAL?;:MEASU:MEAS2?;:MEASU:MEAS2:VAL?;:MEASU:MEAS3?;:MEASU:MEAS3:VAL?'
+      );
+      const measures = (await this.receive()).toString().split(';');
+
+      const voltageCH1 = parseFloat(measures[3]);
+      const voltageCH2 = parseFloat(measures[7]);
+
+      const jump = 10;
+
+      this.x = new Array(pointsCH1.length - jump);
+      this.y = new Array(pointsCH2.length - jump);
+      this.z = new Array(pointsCH1.length - jump);
+
+      var max = {} as any;
+      var min = {} as any;
+
+      for (let i = 0; i < this.x.length; i++) {
+        this.x[i] = pointsCH1.readInt8(i + jump);
+
+        if (max.ch1 == undefined) {
+          max.ch1 = this.x[i];
+        }
+
+        if (min.ch1 == undefined) {
+          min.ch1 = this.x[i];
+        }
+
+        if (this.x[i] > max.ch1) {
+          max.ch1 = this.x[i];
+        }
+
+        if (this.x[i] < min.ch1) {
+          min.ch1 = this.x[i];
+        }
+
+        this.y[i] = pointsCH2.readInt8(i + jump);
+
+        if (max.ch2 == undefined) {
+          max.ch2 = this.y[i];
+        }
+
+        if (min.ch2 == undefined) {
+          min.ch2 = this.y[i];
+        }
+
+        if (this.y[i] > max.ch2) {
+          max.ch2 = this.y[i];
+        }
+
+        if (this.y[i] < min.ch2) {
+          min.ch2 = this.y[i];
+        }
+
+        this.z[i] = i;
+      }
+
+      for (let i = 0; i < this.x.length; i++) {
+        this.x[i] =
+          ((this.x[i] - min.ch1) / (max.ch1 - min.ch1) - 0.5) * voltageCH1;
+        this.y[i] =
+          ((this.y[i] - min.ch2) / (max.ch2 - min.ch2) - 0.5) * voltageCH2;
+      }
+
+      const I = this.eletricalCurrent;
+      var group = [];
+
+      for (let index = 0; index < this.x.length; index++) {
+        group.push({
+          x: this.x[index],
+          y: this.y[index],
+        });
+      }
+
+      this.thirdData$.next([
+        {
+          label: `Canal 1 x Canal 2 (Área: ${this.calcPolygonArea(
+            group
+          )} J/m³)`,
+          data: group,
+          pointRadius: 0,
+          tension: 0,
+          borderWidth: 1.5,
+          backgroundColor: '#373F51',
+          borderColor: '#373F51',
+        },
+      ]);
+
+      const H = this.H;
+      const B = this.B;
+
+      group = [];
+
+      for (let index = 0; index < B.length; index++) {
+        group.push({
+          x: H[index],
+          y: B[index],
+        });
+      }
+
+      console.log(B);
+      
+
+      this.fourthData$.next([
+        {
+          data: group,
+          pointRadius: 0,
+          tension: 0.5,
+          borderWidth: 1.5,
+          label: `B x H (Área: ${this.calcPolygonArea(
+            group
+          )} J/m³)    (H_MAX: ${Math.max(...H).toFixed(2)} A/m B_MAX: ${Math.max(
+            ...B
+          ).toFixed(3)} T)`,
+          spanGaps: false,
+          borderJoinStyle: 'bevel',
+          backgroundColor: '#74C191',
+          borderColor: '#74C191',
+        },
+      ]);
+
+      this.secondData$.next([
+        {
+          data: I,
+          label: 'Corrente Resistor 1',
+          radius: 0.02,
+          backgroundColor: '#EB3030',
+          borderColor: '#EB3030',
+        },
+      ]);
+
+      this.firstData$.next([
+        {
+          data: this.x,
+          label: 'Canal 1',
+          radius: 0.02,
+          backgroundColor: '#FF8800',
+          borderColor: '#FF8800',
+        },
+        {
+          data: this.y,
+          label: 'Canal 2',
+          radius: 0.02,
+          backgroundColor: '#1F93E1',
+          borderColor: '#1F93E1',
+        },
+      ]);
+
+      this._changeDetectorRef.detectChanges();
+      await this.sleep(10);
+    }
+  }
+
+  public bForm = this._formBuilder.group({
+    N: [600, [Validators.required]],
+    A: [9 * 10 ** -4, [Validators.required]],
+    R: [330, [Validators.required]],
+    C: [0.0001, [Validators.required]],
+  });
+
+  get B(): Array<number> {
+    const { N, A, R, C } = this.bForm.value;
+
+    const B = new Array(this.y.length);
+
+    for (let i = 0; i < B.length; i++) {
+      B[i] = (this.y[i] * C! * R!) / (N! * A!);
+    }
+
+    return B;
+  }
+
+  public hForm = this._formBuilder.group({
+    R: [21.6, [Validators.required]],
+    N: [600, [Validators.required]],
+    L: [0.069, [Validators.required]],
+  });
+
+  get H(): Array<number> {
+    const { N, R, L } = this.hForm.value;
+
+    const H = new Array(this.x.length);
+
+    for (let i = 0; i < H.length; i++) {
+      H[i] = (N! * this.x[i]) / (L! * R!);
+    }
+
+    return H;
+  }
+
+  get eletricalCurrent(): Array<number> {
+    const { R } = this.hForm.value;
+    const I = new Array(this.x.length);
+
+    for (let i = 0; i < I.length - 1; i++) {
+      I[i] = this.x[i] / R!;
+    }
+
+    return I;
+  }
+
+  downloadData(object: any) {
+    const array = new Array();
+
+    for (var [key, value] of Object.entries(object)) {
+      const valueArray = value as Array<any>;
+
+      for (let index = 0; index < valueArray.length; index++) {
+        if (array[index] == undefined) {
+          array[index] = {};
+        }
+
+        array[index][key] = valueArray[index];
+      }
+    }
+
+    this._xlsxService.save(array);
+  }
+
+  downloadFirstData() {
+    this.downloadData({
+      canal1: this.x,
+      canal2: this.y,
+    });
+  }
+
+  downloadSecondData() {
+    this.downloadData({
+      corrente: this.eletricalCurrent,
+    });
+  }
+
+  downloadFourthData() {
+    this.downloadData({
+      B: this.B,
+      H: this.H,
+    });
+  }
+
+  sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  ngOnInit(): void {
+    this.device = this._activatedRoute.snapshot.data['device'];
+    this.start();
+  }
+
+  calcPolygonArea(vertices: any) {
+    var total = 0;
+
+    for (var i = 0, l = vertices.length; i < l; i++) {
+      var addX = vertices[i].x;
+      var addY = vertices[i == vertices.length - 1 ? 0 : i + 1].y;
+      var subX = vertices[i == vertices.length - 1 ? 0 : i + 1].x;
+      var subY = vertices[i].y;
+
+      total += addX * addY * 0.5;
+      total -= subX * subY * 0.5;
+    }
+
+    return Math.abs(total).toFixed(2);
+  }
+
+  getBuffer(message: string) {
+    const size = message.length;
+    this.btag = (this.btag % 255) + 1;
+
+    return Buffer.concat([
+      pack('BBBx', 1, this.btag, ~this.btag & 0xff),
+      pack('<LBxxx', size, 1),
+      Buffer.from(message),
+      Buffer.alloc((4 - (size % 4)) % 4),
+    ]);
+  }
+
+  get secondBuffer() {
+    this.btag = (this.btag % 255) + 1;
+    return Buffer.concat([
+      pack('BBBx', 2, this.btag, ~this.btag & 0xff),
+      pack('<LBxxx', 1024, 0),
+    ]);
+  }
+
+  toBuffer(ab: ArrayBuffer) {
+    const buf = Buffer.alloc(ab.byteLength);
+    const view = new Uint8Array(ab);
+    for (let i = 0; i < buf.length; ++i) {
+      buf[i] = view[i];
+    }
+    return buf;
+  }
+
+  async receive() {
+    var stop = 0;
+    var result = Buffer.alloc(0);
+
+    while (stop == 0) {
+      await this.device.transferOut(6, this.secondBuffer);
+      const transferIn = await this.device.transferIn(5, 1036);
+
+      if (transferIn.data) {
+        const buffer = this.toBuffer(transferIn.data.buffer);
+        const unpack = unpackFrom('<LBxxx', buffer, true, 4) as any;
+        const size = unpack[0];
+        stop = unpack[1];
+
+        result = Buffer.concat([result, buffer.slice(12, size + 12)]);
+      }
+    }
+
+    return result;
+  }
+
+  async send(message: string) {
+    await this.device.transferOut(6, this.getBuffer(message));
+  }
+
+  back() {
+    this._router.navigate(['../'], {
+      relativeTo: this._activatedRoute,
+    });
+  }
+}

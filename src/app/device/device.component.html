@@ -1,0 +1,128 @@
+<div id="page">
+  <div id="header">
+    <div id="back" [routerLink]="['../../']"></div>
+    <div id="information">
+      <div id="details">
+        <div class="about">
+          {{ device.productName }} ({{ device.serialNumber }})
+        </div>
+        <div class="manufacturer">
+          {{ device.manufacturerName }}
+        </div>
+      </div>
+      <div id="status">Conectado</div>
+    </div>
+  </div>
+
+  <div id="graphs">
+    <div class="graph">
+      <div class="export" (click)="downloadFirstData()">Exportar</div>
+
+      <canvas
+        class="chart"
+        baseChart
+        [datasets]="firstData$ | async"
+        [labels]="lineChartLabels"
+        [options]="barChartOptions"
+        [type]="barChartType"
+      >
+      </canvas>
+    </div>
+
+    <div class="graph">
+      <div class="export" (click)="downloadSecondData()">Exportar</div>
+
+      <canvas
+        class="chart"
+        baseChart
+        [datasets]="secondData$ | async"
+        [labels]="lineChartLabels"
+        [options]="barChartOptions"
+        [type]="barChartType"
+      >
+      </canvas>
+    </div>
+
+    <div id="params">
+      <div class="group" [formGroup]="hForm">
+        <div class="text">
+          <div class="title">H</div>
+          <div class="description">
+            Insira os parametros para realizar o calculo do H.
+          </div>
+        </div>
+        <div class="inputs c-3">
+          <div class="input-wrapper">
+            <div class="label">Resistência 1</div>
+            <input type="number" formControlName="R" />
+          </div>
+
+          <div class="input-wrapper">
+            <div class="label">Número de voltas</div>
+            <input type="number" formControlName="N" />
+          </div>
+
+          <div class="input-wrapper">
+            <div class="label">Distância</div>
+            <input type="number" formControlName="L" />
+          </div>
+        </div>
+      </div>
+
+      <div class="group" [formGroup]="bForm">
+        <div class="text">
+          <div class="title">B</div>
+          <div class="description">
+            Insira os parametros para realizar o calculo do B.
+          </div>
+        </div>
+        <div class="inputs c-4">
+          <div class="input-wrapper">
+            <div class="label">Número de Voltas</div>
+            <input type="number" formControlName="N" />
+          </div>
+
+          <div class="input-wrapper">
+            <div class="label">Área</div>
+            <input type="number" formControlName="A" />
+          </div>
+
+          <div class="input-wrapper">
+            <div class="label">Resistência 2</div>
+            <input type="number" formControlName="R" />
+          </div>
+
+          <div class="input-wrapper">
+            <div class="label">Capacitância</div>
+            <input type="number" formControlName="C" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="graph">
+      <canvas
+        class="chart"
+        baseChart
+        [datasets]="thirdData$ | async"
+        [options]="scatterChartOptions"
+        [type]="'line'"
+      >
+        >
+      </canvas>
+    </div>
+
+    <div class="graph">
+      <div class="export" (click)="downloadFourthData()">Exportar</div>
+      <canvas
+        class="chart"
+        baseChart
+        [datasets]="fourthData$ | async"
+        [options]="scatterChartOptions"
+        [type]="'line'"
+      >
+        >
+      </canvas>
+    </div>
+  </div>
+</div>

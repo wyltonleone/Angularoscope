@@ -1,0 +1,37 @@
+<div id="page">
+  <div id="list-section">
+    <div id="header">
+      <div id="title">Meus Dispositivos</div>
+      <div id="description">
+        Selecione um dispositivo para começar a coletar os dados. Caso o
+        dispositivo não apareça na lista, clique em adicionar dispositivo.
+      </div>
+    </div>
+
+    <div id="list" *ngIf="devices$ | async as devices">
+      <div
+        *ngFor="let device of devices; let i = index"
+        (click)="selectDevice(i)"
+        class="device"
+      >
+        <div class="about">
+          {{ device.productName }} ({{ device.serialNumber }})
+        </div>
+        <div class="manufacturer">
+          {{ device.manufacturerName }}
+        </div>
+      </div>
+      <div *ngIf="devices.length == 0" class="no-device">
+        Nenhum Dispositivo Adicionado
+      </div>
+    </div>
+
+    <button (click)="addDevice()">
+      <i class="fa-solid fa-circle-plus"></i>
+      Adicionar Dispositivo
+    </button>
+  </div>
+  <div id="illustration-section">
+    <div id="illustration"></div>
+  </div>
+</div>
