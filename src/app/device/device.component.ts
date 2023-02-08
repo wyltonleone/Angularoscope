@@ -224,10 +224,7 @@ export class DeviceComponent implements OnInit {
           x: H[index],
           y: B[index],
         });
-      }
-
-      console.log(B);
-      
+      }      
 
       this.fourthData$.next([
         {
@@ -250,7 +247,7 @@ export class DeviceComponent implements OnInit {
       this.secondData$.next([
         {
           data: I,
-          label: 'Corrente Resistor 1',
+          label: `Corrente Resistor 1 (I_MAX: ${Math.max(...I)})`,
           radius: 0.02,
           backgroundColor: '#EB3030',
           borderColor: '#EB3030',
