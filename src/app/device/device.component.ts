@@ -257,14 +257,14 @@ export class DeviceComponent implements OnInit {
       this.firstData$.next([
         {
           data: this.x,
-          label: 'Canal 1',
+          label: `Canal 1 (V_MAX: ${this.maxValue(this.x)})`,
           radius: 0.02,
           backgroundColor: '#FF8800',
           borderColor: '#FF8800',
         },
         {
           data: this.y,
-          label: 'Canal 2',
+          label: `Canal 2 (V_MAX: ${this.maxValue(this.y)})`,
           radius: 0.02,
           backgroundColor: '#1F93E1',
           borderColor: '#1F93E1',
