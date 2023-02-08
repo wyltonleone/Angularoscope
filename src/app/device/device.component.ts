@@ -257,14 +257,18 @@ export class DeviceComponent implements OnInit {
       this.firstData$.next([
         {
           data: this.x,
-          label: `Canal 1 (V_MAX: ${this.maxValue(this.x)})`,
+          label: `Canal 1 (V_MAX: ${
+            this.maxValue(this.x) + Math.abs(this.minValue(this.x))
+          })`,
           radius: 0.02,
           backgroundColor: '#FF8800',
           borderColor: '#FF8800',
         },
         {
           data: this.y,
-          label: `Canal 2 (V_MAX: ${this.maxValue(this.y)})`,
+          label: `Canal 2 (V_MAX: ${
+            this.maxValue(this.y) + Math.abs(this.minValue(this.y))
+          })`,
           radius: 0.02,
           backgroundColor: '#1F93E1',
           borderColor: '#1F93E1',
@@ -352,6 +356,18 @@ export class DeviceComponent implements OnInit {
     }
 
     return max;
+  }
+
+  minValue(arr: Array<number>) {
+    var min = arr[0];
+
+    for (const value of arr) {
+      if (value != undefined && value < min) {
+        min = value;
+      }
+    }
+
+    return min;
   }
 
   downloadFirstData() {
