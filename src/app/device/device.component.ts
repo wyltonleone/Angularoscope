@@ -224,7 +224,7 @@ export class DeviceComponent implements OnInit {
           x: H[index],
           y: B[index],
         });
-      }      
+      }
 
       this.fourthData$.next([
         {
@@ -234,9 +234,9 @@ export class DeviceComponent implements OnInit {
           borderWidth: 1.5,
           label: `B x H (Área: ${this.calcPolygonArea(
             group
-          )} J/m³)    (H_MAX: ${Math.max(...H).toFixed(2)} A/m B_MAX: ${Math.max(
-            ...B
-          ).toFixed(3)} T)`,
+          )} J/m³)    (H_MAX: ${Math.max(...H).toFixed(
+            2
+          )} A/m B_MAX: ${Math.max(...B).toFixed(3)} T)`,
           spanGaps: false,
           borderJoinStyle: 'bevel',
           backgroundColor: '#74C191',
@@ -247,7 +247,7 @@ export class DeviceComponent implements OnInit {
       this.secondData$.next([
         {
           data: I,
-          label: `Corrente Resistor 1 (I_MAX: ${Math.max(...I)})`,
+          label: `Corrente Resistor 1 (I_MAX: ${this.maxValue(I)})`,
           radius: 0.02,
           backgroundColor: '#EB3030',
           borderColor: '#EB3030',
@@ -340,6 +340,18 @@ export class DeviceComponent implements OnInit {
     }
 
     this._xlsxService.save(array);
+  }
+
+  maxValue(arr: Array<number>) {
+    var max = arr[0];
+
+    for (const value of arr) {
+      if (value != undefined && value > max) {
+        max = value;
+      }
+    }
+
+    return max;
   }
 
   downloadFirstData() {
