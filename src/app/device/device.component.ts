@@ -78,6 +78,8 @@ export class DeviceComponent implements OnInit {
 
   public z: Array<number>;
 
+  public frequency: number = 0;
+
   constructor(
     private _router: Router,
     private _changeDetectorRef: ChangeDetectorRef,
@@ -127,9 +129,11 @@ export class DeviceComponent implements OnInit {
       const pointsCH2 = (await this.receive()).slice(0, -4);
 
       await this.send(
-        'MEASU:MEAS1?;:MEASU:MEAS1:VAL?;:MEASU:MEAS2?;:MEASU:MEAS2:VAL?;:MEASU:MEAS3?;:MEASU:MEAS3:VAL?'
+        'MEASU:MEAS1?;:MEASU:MEAS1:VAL?;:MEASU:MEAS2?;:MEASU:MEAS2:VAL?;:MEASU:MEAS3?;:MEASU:MEAS3:VAL?;:MEASU:MEAS4?;:MEASU:MEAS4:VAL?;:MEASU:MEAS5?;:MEASU:MEAS5:VAL?'
       );
       const measures = (await this.receive()).toString().split(';');
+
+      this.frequency = parseFloat(measures[19]).toFixed(3) as any;      
 
       const voltageCH1 = parseFloat(measures[3]);
       const voltageCH2 = parseFloat(measures[7]);

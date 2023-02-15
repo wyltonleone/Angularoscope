@@ -16,7 +16,10 @@
 
   <div id="graphs">
     <div class="graph">
-      <div class="export" (click)="downloadFirstData()">Exportar</div>
+      <div class="flex">
+        <div class="left export" (click)="downloadFirstData()">Exportar</div>
+        <div class="right">Frequência: {{ frequency }}Hz</div>
+      </div>
 
       <canvas
         class="chart"
@@ -113,7 +116,10 @@
     </div>
 
     <div class="graph">
-      <div class="export" (click)="downloadFourthData()">Exportar</div>
+      <div class="flex">
+        <div class="left export" (click)="downloadFourthData()">Exportar</div>
+        <div class="right">Frequência: {{ frequency }}Hz</div>
+      </div>
       <canvas
         class="chart"
         baseChart
