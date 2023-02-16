@@ -1,4 +1,10 @@
-import { ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { ActivatedRoute, Route, Router } from '@angular/router';
 import { BehaviorSubject, ReplaySubject, Subject } from 'rxjs';
 import { DeviceService } from './device.service';
@@ -6,6 +12,7 @@ import { pack, unpackFrom } from 'python-struct';
 import { Buffer } from 'buffer';
 
 import {
+  Chart,
   ChartConfiguration,
   ChartData,
   ChartEvent,
@@ -15,6 +22,8 @@ import {
 import { BaseChartDirective } from 'ng2-charts';
 import { XLSXService } from './xlsx.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import html2canvas from 'html2canvas';
+import { downloadZip } from 'client-zip';
 
 @Component({
   templateUrl: './device.component.html',
@@ -80,6 +89,9 @@ export class DeviceComponent implements OnInit {
 
   public frequency: number = 0;
 
+  @ViewChild('graphs')
+  graphs!: ElementRef<HTMLCanvasElement>;
+
   constructor(
     private _router: Router,
     private _changeDetectorRef: ChangeDetectorRef,
@@ -133,10 +145,13 @@ export class DeviceComponent implements OnInit {
       );
       const measures = (await this.receive()).toString().split(';');
 
-      this.frequency = parseFloat(measures[19]).toFixed(3) as any;      
+      this.frequency = parseFloat(measures[19]).toFixed(3) as any;
 
       const voltageCH1 = parseFloat(measures[3]);
       const voltageCH2 = parseFloat(measures[7]);
+
+      const rmsVoltageCH1 = parseFloat(measures[11]);
+      const rmsVoltageCH2 = parseFloat(measures[15]);
 
       const jump = 10;
 
@@ -251,7 +266,7 @@ export class DeviceComponent implements OnInit {
       this.secondData$.next([
         {
           data: I,
-          label: `Corrente Resistor 1 (I_MAX: ${this.maxValue(I)})`,
+          label: `Corrente Resistor 1 (I_MAX: ${this.maxValue(I).toFixed(3)})`,
           radius: 0.02,
           backgroundColor: '#EB3030',
           borderColor: '#EB3030',
@@ -261,18 +276,22 @@ export class DeviceComponent implements OnInit {
       this.firstData$.next([
         {
           data: this.x,
-          label: `Canal 1 (V_MAX: ${
+          label: `Canal 1 (P.a.P: ${(
             this.maxValue(this.x) + Math.abs(this.minValue(this.x))
-          })`,
+          ).toFixed(3)}, RMS: ${rmsVoltageCH1.toFixed(3)}, MAX: ${this.maxValue(
+            this.x
+          ).toFixed(3)})`,
           radius: 0.02,
           backgroundColor: '#FF8800',
           borderColor: '#FF8800',
         },
         {
           data: this.y,
-          label: `Canal 2 (V_MAX: ${
+          label: `Canal 2 (P.a.P: ${(
             this.maxValue(this.y) + Math.abs(this.minValue(this.y))
-          })`,
+          ).toFixed(3)}, RMS: ${rmsVoltageCH2.toFixed(3)}, MAX: ${this.maxValue(
+            this.y
+          ).toFixed(3)})`,
           radius: 0.02,
           backgroundColor: '#1F93E1',
           borderColor: '#1F93E1',
@@ -350,6 +369,24 @@ export class DeviceComponent implements OnInit {
     this._xlsxService.save(array);
   }
 
+  getBlobData(object: any) {
+    const array = new Array();
+
+    for (var [key, value] of Object.entries(object)) {
+      const valueArray = value as Array<any>;
+
+      for (let index = 0; index < valueArray.length; index++) {
+        if (array[index] == undefined) {
+          array[index] = {};
+        }
+
+        array[index][key] = valueArray[index];
+      }
+    }
+
+    return this._xlsxService.getBlob(array);
+  }
+
   maxValue(arr: Array<number>) {
     var max = arr[0];
 
@@ -401,6 +438,61 @@ export class DeviceComponent implements OnInit {
   ngOnInit(): void {
     this.device = this._activatedRoute.snapshot.data['device'];
     this.start();
+
+    document.addEventListener(
+      'keydown',
+      (event) => {
+        const keyName = event.key;
+
+        if (keyName == 's') {
+          html2canvas(document.querySelector('#graphs')!).then(
+            async (canvas) => {
+              const canvasBlob = (await new Promise((resolve) =>
+                canvas.toBlob(resolve)
+              )) as any;
+
+              const blob = await downloadZip([
+                {
+                  name: 'plots.jpeg',
+                  lastModified: new Date(),
+                  input: canvasBlob,
+                },
+                {
+                  name: 'tensoes.xlsx',
+                  lastModified: new Date(),
+                  input: this.getBlobData({
+                    canal1: this.x,
+                    canal2: this.y,
+                  }),
+                },
+                {
+                  name: 'corrente.xlsx',
+                  lastModified: new Date(),
+                  input: this.getBlobData({
+                    corrente: this.eletricalCurrent,
+                  }),
+                },
+                {
+                  name: 'campos.xlsx',
+                  lastModified: new Date(),
+                  input: this.getBlobData({
+                    B: this.B,
+                    H: this.H,
+                  }),
+                },
+              ]).blob();
+
+              // make and click a temporary link to download the Blob
+              const link = document.createElement('a');
+              link.href = URL.createObjectURL(blob);
+              link.download = `${new Date().toISOString()}.zip`;
+              link.click();
+            }
+          );
+        }
+      },
+      false
+    );
   }
 
   calcPolygonArea(vertices: any) {

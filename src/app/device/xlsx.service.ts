@@ -24,4 +24,11 @@ export class XLSXService {
     const data = new Blob([excelBuffer], { type: this.mimeType });
     FileSaver.saveAs(data, this.name + this.extension);
   }
+
+  public getBlob(array: Array<any>) {
+    const ws = XLSX.utils.json_to_sheet(array);
+    const wb = { Sheets: { data: ws }, SheetNames: ['data'] };
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    return new Blob([excelBuffer], { type: this.mimeType });
+  }
 }

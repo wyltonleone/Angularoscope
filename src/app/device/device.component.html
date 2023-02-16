@@ -46,6 +46,34 @@
       </canvas>
     </div>
 
+    <div class="graph">
+      <canvas
+        class="chart"
+        baseChart
+        [datasets]="thirdData$ | async"
+        [options]="scatterChartOptions"
+        [type]="'line'"
+      >
+        >
+      </canvas>
+    </div>
+
+    <div class="graph">
+      <div class="flex">
+        <div class="left export" (click)="downloadFourthData()">Exportar</div>
+        <div class="right">Frequência: {{ frequency }}Hz</div>
+      </div>
+      <canvas
+        class="chart"
+        baseChart
+        [datasets]="fourthData$ | async"
+        [options]="scatterChartOptions"
+        [type]="'line'"
+      >
+        >
+      </canvas>
+    </div>
+
     <div id="params">
       <div class="group" [formGroup]="hForm">
         <div class="text">
@@ -101,34 +129,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="graph">
-      <canvas
-        class="chart"
-        baseChart
-        [datasets]="thirdData$ | async"
-        [options]="scatterChartOptions"
-        [type]="'line'"
-      >
-        >
-      </canvas>
-    </div>
-
-    <div class="graph">
-      <div class="flex">
-        <div class="left export" (click)="downloadFourthData()">Exportar</div>
-        <div class="right">Frequência: {{ frequency }}Hz</div>
-      </div>
-      <canvas
-        class="chart"
-        baseChart
-        [datasets]="fourthData$ | async"
-        [options]="scatterChartOptions"
-        [type]="'line'"
-      >
-        >
-      </canvas>
     </div>
   </div>
 </div>
