@@ -466,6 +466,7 @@ export class DeviceComponent implements OnInit {
                   input: this.getBlobData({
                     'Canal 1': this.x,
                     'Canal 2': this.y,
+                    'Frequência': [this.frequency],
                     'Pico a Pico Vp': [(
                       this.maxValue(this.x) + Math.abs(this.minValue(this.x))
                     ).toFixed(3)],
