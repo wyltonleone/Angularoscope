@@ -466,16 +466,16 @@ export class DeviceComponent implements OnInit {
                   input: this.getBlobData({
                     'Canal 1': this.x,
                     'Canal 2': this.y,
-                    'Pico a Pico Vp': (
+                    'Pico a Pico Vp': [(
                       this.maxValue(this.x) + Math.abs(this.minValue(this.x))
-                    ).toFixed(3),
-                    'RMS Vp': this.rmsVoltageCH1,
-                    'MAX Vp': this.maxValue(this.x).toFixed(3),
-                    'Pico a Pico Vs': (
+                    ).toFixed(3)],
+                    'RMS Vp': [this.rmsVoltageCH1],
+                    'MAX Vp': [this.maxValue(this.x).toFixed(3)],
+                    'Pico a Pico Vs': [(
                       this.maxValue(this.y) + Math.abs(this.minValue(this.y))
-                    ).toFixed(3),
-                    'RMS Vs': this.rmsVoltageCH2,
-                    'MAX Vs': this.maxValue(this.y).toFixed(3),
+                    ).toFixed(3)],
+                    'RMS Vs': [this.rmsVoltageCH2],
+                    'MAX Vs': [this.maxValue(this.y).toFixed(3)],
                   }),
                 },
                 {
