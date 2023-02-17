@@ -118,6 +118,9 @@ export class DeviceComponent implements OnInit {
     this.lineChartLabels = z;
   }
 
+  public rmsVoltageCH1: number = 0;
+  public rmsVoltageCH2: number = 0;
+
   async start() {
     await this.device.open();
     await this.device.selectConfiguration(1);
@@ -150,8 +153,8 @@ export class DeviceComponent implements OnInit {
       const voltageCH1 = parseFloat(measures[3]);
       const voltageCH2 = parseFloat(measures[7]);
 
-      const rmsVoltageCH1 = parseFloat(measures[11]);
-      const rmsVoltageCH2 = parseFloat(measures[15]);
+      this.rmsVoltageCH1 = parseFloat(measures[11]);
+      this.rmsVoltageCH2 = parseFloat(measures[15]);
 
       const jump = 10;
 
@@ -278,9 +281,9 @@ export class DeviceComponent implements OnInit {
           data: this.x,
           label: `Canal 1 (P.a.P: ${(
             this.maxValue(this.x) + Math.abs(this.minValue(this.x))
-          ).toFixed(3)}, RMS: ${rmsVoltageCH1.toFixed(3)}, MAX: ${this.maxValue(
-            this.x
-          ).toFixed(3)})`,
+          ).toFixed(3)}, RMS: ${this.rmsVoltageCH1.toFixed(
+            3
+          )}, MAX: ${this.maxValue(this.x).toFixed(3)})`,
           radius: 0.02,
           backgroundColor: '#FF8800',
           borderColor: '#FF8800',
@@ -289,9 +292,9 @@ export class DeviceComponent implements OnInit {
           data: this.y,
           label: `Canal 2 (P.a.P: ${(
             this.maxValue(this.y) + Math.abs(this.minValue(this.y))
-          ).toFixed(3)}, RMS: ${rmsVoltageCH2.toFixed(3)}, MAX: ${this.maxValue(
-            this.y
-          ).toFixed(3)})`,
+          ).toFixed(3)}, RMS: ${this.rmsVoltageCH2.toFixed(
+            3
+          )}, MAX: ${this.maxValue(this.y).toFixed(3)})`,
           radius: 0.02,
           backgroundColor: '#1F93E1',
           borderColor: '#1F93E1',
@@ -456,6 +459,24 @@ export class DeviceComponent implements OnInit {
                   name: 'plots.jpeg',
                   lastModified: new Date(),
                   input: canvasBlob,
+                },
+                {
+                  name: 'dados.xlsx',
+                  lastModified: new Date(),
+                  input: this.getBlobData({
+                    'Canal 1': this.x,
+                    'Canal 2': this.y,
+                    'Pico a Pico Vp': (
+                      this.maxValue(this.x) + Math.abs(this.minValue(this.x))
+                    ).toFixed(3),
+                    'RMS Vp': this.rmsVoltageCH1,
+                    'MAX Vp': this.maxValue(this.x).toFixed(3),
+                    'Pico a Pico Vs': (
+                      this.maxValue(this.y) + Math.abs(this.minValue(this.y))
+                    ).toFixed(3),
+                    'RMS Vs': this.rmsVoltageCH2,
+                    'MAX Vs': this.maxValue(this.y).toFixed(3),
+                  }),
                 },
                 {
                   name: 'tensoes.xlsx',
