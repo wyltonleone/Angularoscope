@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   ElementRef,
@@ -438,79 +439,150 @@ export class DeviceComponent implements OnInit {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  public coleta$ = new BehaviorSubject({
+    Frequência: new Array<any>(),
+    'Pico a Pico Vp': new Array<any>(),
+    'RMS Vp': new Array<any>(),
+    'MAX Vp': new Array<any>(),
+    'Pico a Pico Vs': new Array<any>(),
+    'RMS Vs': new Array<any>(),
+    'MAX Vs': new Array<any>(),
+    Plots: new Array<any>(),
+    Tensoes: new Array<any>(),
+    Correntes: new Array<any>(),
+    Campos: new Array<any>(),
+    Length: 0,
+  });
+
+  clearColeta() {
+    this.coleta$.next({
+      Frequência: new Array<any>(),
+      'Pico a Pico Vp': new Array<any>(),
+      'RMS Vp': new Array<any>(),
+      'MAX Vp': new Array<any>(),
+      'Pico a Pico Vs': new Array<any>(),
+      'RMS Vs': new Array<any>(),
+      'MAX Vs': new Array<any>(),
+      Plots: new Array<any>(),
+      Tensoes: new Array<any>(),
+      Correntes: new Array<any>(),
+      Campos: new Array<any>(),
+      Length: 0,
+    });
+  }
+
+  public coletas = 0;
+
   ngOnInit(): void {
     this.device = this._activatedRoute.snapshot.data['device'];
     this.start();
 
+    this.coleta$.subscribe((value) => {
+      this.coletas = value.Length;
+      this._changeDetectorRef.markForCheck();
+    });
+
     document.addEventListener(
       'keydown',
-      (event) => {
+      async (event) => {
         const keyName = event.key;
 
-        if (keyName == 's') {
-          html2canvas(document.querySelector('#graphs')!).then(
-            async (canvas) => {
-              const canvasBlob = (await new Promise((resolve) =>
-                canvas.toBlob(resolve)
-              )) as any;
+        if (keyName == 'l') {
+          this.clearColeta();
+        }
 
-              const blob = await downloadZip([
-                {
-                  name: 'plots.jpeg',
-                  lastModified: new Date(),
-                  input: canvasBlob,
-                },
-                {
-                  name: 'dados.xlsx',
-                  lastModified: new Date(),
-                  input: this.getBlobData({
-                    'Canal 1': this.x,
-                    'Canal 2': this.y,
-                    'Frequência': [this.frequency],
-                    'Pico a Pico Vp': [(
-                      this.maxValue(this.x) + Math.abs(this.minValue(this.x))
-                    ).toFixed(3)],
-                    'RMS Vp': [this.rmsVoltageCH1],
-                    'MAX Vp': [this.maxValue(this.x).toFixed(3)],
-                    'Pico a Pico Vs': [(
-                      this.maxValue(this.y) + Math.abs(this.minValue(this.y))
-                    ).toFixed(3)],
-                    'RMS Vs': [this.rmsVoltageCH2],
-                    'MAX Vs': [this.maxValue(this.y).toFixed(3)],
-                  }),
-                },
-                {
-                  name: 'tensoes.xlsx',
-                  lastModified: new Date(),
-                  input: this.getBlobData({
-                    canal1: this.x,
-                    canal2: this.y,
-                  }),
-                },
-                {
-                  name: 'corrente.xlsx',
-                  lastModified: new Date(),
-                  input: this.getBlobData({
-                    corrente: this.eletricalCurrent,
-                  }),
-                },
-                {
-                  name: 'campos.xlsx',
-                  lastModified: new Date(),
-                  input: this.getBlobData({
-                    B: this.B,
-                    H: this.H,
-                  }),
-                },
-              ]).blob();
+        if (keyName == 'c') {
+          const canvas = await html2canvas(document.querySelector('#graphs')!);
+          const coleta = this.coleta$.value;
 
-              // make and click a temporary link to download the Blob
-              const link = document.createElement('a');
-              link.href = URL.createObjectURL(blob);
-              link.download = `${new Date().toISOString()}.zip`;
-              link.click();
-            }
+          const canvasBlob = (await new Promise((resolve) =>
+            canvas.toBlob(resolve)
+          )) as any;
+
+          const now = new Date().toISOString();
+
+          coleta.Plots.push({
+            name: `${now}/plots.jpeg`,
+            lastModified: new Date(),
+            input: canvasBlob,
+          });
+
+          coleta.Frequência.push(this.frequency);
+
+          coleta['Pico a Pico Vp'].push(
+            (this.maxValue(this.x) + Math.abs(this.minValue(this.x))).toFixed(
+              3
+            ),
+            (this.maxValue(this.x) + Math.abs(this.minValue(this.x))).toFixed(3)
           );
+
+          coleta['RMS Vp'].push(this.rmsVoltageCH1);
+          coleta['MAX Vp'].push(this.maxValue(this.x).toFixed(3));
+          coleta['Pico a Pico Vs'].push(
+            (this.maxValue(this.y) + Math.abs(this.minValue(this.y))).toFixed(3)
+          );
+          coleta['RMS Vs'].push(this.rmsVoltageCH2);
+          coleta['MAX Vs'].push(this.maxValue(this.y).toFixed(3));
+
+          coleta.Tensoes.push({
+            name: `${now}/tensoes.xlsx`,
+            lastModified: new Date(),
+            input: this.getBlobData({
+              canal1: this.x,
+              canal2: this.y,
+            }),
+          });
+
+          coleta.Correntes.push({
+            name: `${now}/corrente.xlsx`,
+            lastModified: new Date(),
+            input: this.getBlobData({
+              corrente: this.eletricalCurrent,
+            }),
+          });
+
+          coleta.Campos.push({
+            name: `${now}/campos.xlsx`,
+            lastModified: new Date(),
+            input: this.getBlobData({
+              B: this.B,
+              H: this.H,
+            }),
+          });
+
+          coleta.Length++;
+
+          this.coleta$.next(coleta);
+        }
+
+        if (keyName == 's') {
+          const coleta = this.coleta$.value;
+
+          const blob = await downloadZip([
+            ...coleta.Plots,
+            ...coleta.Tensoes,
+            ...coleta.Correntes,
+            ...coleta.Campos,
+            {
+              name: 'dados.xlsx',
+              lastModified: new Date(),
+              input: this.getBlobData({
+                Frequência: coleta.Frequência,
+                'Pico a Pico Vp': coleta['Pico a Pico Vp'],
+                'RMS Vp': coleta['RMS Vp'],
+                'MAX Vp': coleta['MAX Vp'],
+                'Pico a Pico Vs': coleta['Pico a Pico Vs'],
+                'RMS Vs': coleta['RMS Vs'],
+                'MAX Vs': coleta['MAX Vs'],
+              }),
+            },
+          ]).blob();
+
+          // make and click a temporary link to download the Blob
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `${new Date().toISOString()}.zip`;
+          link.click();
         }
       },
       false

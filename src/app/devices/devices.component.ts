@@ -12,7 +12,7 @@ export class DevicesComponent implements OnInit {
 
   constructor(
     private _router: Router,
-    private _devicesService: DevicesService
+    private _devicesService: DevicesService,
   ) {
     this.devices$ = _devicesService.devices$;
   }
