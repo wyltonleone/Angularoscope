@@ -310,7 +310,7 @@ export class DeviceComponent implements OnInit {
   public bForm = this._formBuilder.group({
     N: [600, [Validators.required]],
     A: [9 * 10 ** -4, [Validators.required]],
-    R: [330, [Validators.required]],
+    R: [22, [Validators.required]],
     C: [0.0001, [Validators.required]],
   });
 
@@ -327,9 +327,9 @@ export class DeviceComponent implements OnInit {
   }
 
   public hForm = this._formBuilder.group({
-    R: [21.6, [Validators.required]],
+    R: [10, [Validators.required]],
     N: [600, [Validators.required]],
-    L: [0.069, [Validators.required]],
+    L: [0.38, [Validators.required]],
   });
 
   get H(): Array<number> {
