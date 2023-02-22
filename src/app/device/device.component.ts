@@ -510,9 +510,6 @@ export class DeviceComponent implements OnInit {
           coleta.Frequência.push(this.frequency);
 
           coleta['Pico a Pico Vp'].push(
-            (this.maxValue(this.x) + Math.abs(this.minValue(this.x))).toFixed(
-              3
-            ),
             (this.maxValue(this.x) + Math.abs(this.minValue(this.x))).toFixed(3)
           );
 
