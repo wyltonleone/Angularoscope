@@ -125,8 +125,20 @@ export class DeviceComponent implements OnInit {
   async start() {
     await this.device.open();
     await this.device.selectConfiguration(1);
-    console.log(this.device.deviceProtocol);
-    await this.device.claimInterface(this.device.deviceProtocol)
+    let interfaceNumber = 0;
+    let errorCount = 0;
+
+    while (errorCount < 8) {
+      try {
+        await this.device.claimInterface(interfaceNumber);
+        console.log(interfaceNumber);
+        break;
+      } catch (error) {
+        errorCount++;
+        interfaceNumber++;
+      }
+    }
+    console.log("pass");
 
     await this.send('DESE 1');
     await this.send('*ESE 1');
