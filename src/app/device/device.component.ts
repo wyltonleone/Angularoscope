@@ -125,6 +125,7 @@ export class DeviceComponent implements OnInit {
   async start() {
     await this.device.open();
     await this.device.selectConfiguration(1);
+    console.log(this.device);
     await this.device.claimInterface(0);
 
     await this.send('DESE 1');
