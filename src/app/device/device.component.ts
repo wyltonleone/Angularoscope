@@ -125,7 +125,7 @@ export class DeviceComponent implements OnInit {
   async start() {
     await this.device.open();
     await this.device.selectConfiguration(1);
-    await this.device.descriptor.bNumInterfaces;
+    await console.log(this.device.deviceClass);
     await this.device.claimInterface(0);
    
 
