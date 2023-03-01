@@ -125,8 +125,10 @@ export class DeviceComponent implements OnInit {
   async start() {
     await this.device.open();
     await this.device.selectConfiguration(1);
-    await this.device.claimInterface(2);
-    console.log("pass");
+    if (await this.device.is_kernel_driver_active(0)):
+      this.device.detach_kernel_driver(0);
+    await this.device.claimInterface(0);
+   
 
     await this.send('DESE 1');
     await this.send('*ESE 1');
