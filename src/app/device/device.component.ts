@@ -51,6 +51,15 @@ export class DeviceComponent implements OnInit {
     },
   };
 
+  public barChartOptionsFirst: ChartConfiguration['options'] = {
+    responsive: true,
+    scales: {
+    },
+    animation: {
+      duration: 0,
+    },
+  };
+
   public barChartType: ChartType = 'line';
 
   public scatterChartOptions: ChartConfiguration<'line'>['options'] = {
@@ -62,13 +71,13 @@ export class DeviceComponent implements OnInit {
     showLine: true,
     scales: {
       x: {
-        type: 'linear', // MANDATORY TO SHOW YOUR POINTS! (THIS IS THE IMPORTANT BIT)
-        display: true, // mandatory
+        type: 'linear', 
+        display: true,
         position: 'bottom',
       },
       y: {
-        type: 'linear', // MANDATORY TO SHOW YOUR POINTS! (THIS IS THE IMPORTANT BIT)
-        display: true, // mandatory
+        type: 'linear',
+        display: true, 
         position: 'bottom',
       },
     },
@@ -127,7 +136,6 @@ export class DeviceComponent implements OnInit {
     await this.device.selectConfiguration(1);
     await console.log(this.device.deviceClass);
     await this.device.claimInterface(0);
-   
 
     await this.send('DESE 1');
     await this.send('*ESE 1');
@@ -505,6 +513,12 @@ export class DeviceComponent implements OnInit {
 
           coleta.Plots.push({
             name: `${now}/plots.jpeg`,
+            lastModified: new Date(),
+            input: canvasBlob,
+          });
+
+          coleta.Plots.push({
+            name: `plots/${this.frequency}.jpeg`,
             lastModified: new Date(),
             input: canvasBlob,
           });
