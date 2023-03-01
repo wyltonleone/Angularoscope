@@ -125,8 +125,8 @@ export class DeviceComponent implements OnInit {
   async start() {
     await this.device.open();
     await this.device.selectConfiguration(1);
-    if (await this.device.is_kernel_driver_active(0)):
-      this.device.detach_kernel_driver(0);
+    if (await this.device.is_Kernel_driver_active(0)):
+      this.device.detach_Kernel_driver(0);
     await this.device.claimInterface(0);
    
 
