@@ -8,23 +8,16 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Route, Router } from '@angular/router';
 import { BehaviorSubject, ReplaySubject, Subject } from 'rxjs';
-import { DeviceService } from './device.service';
 import { pack, unpackFrom } from 'python-struct';
 import { Buffer } from 'buffer';
 
-import {
-  Chart,
-  ChartConfiguration,
-  ChartData,
-  ChartEvent,
-  ChartOptions,
-  ChartType,
-} from 'chart.js';
+import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { XLSXService } from './xlsx.service';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import html2canvas from 'html2canvas';
 import { downloadZip } from 'client-zip';
+import { smooth } from './device.util';
 
 @Component({
   templateUrl: './device.component.html',
@@ -53,8 +46,7 @@ export class DeviceComponent implements OnInit {
 
   public barChartOptionsFirst: ChartConfiguration['options'] = {
     responsive: true,
-    scales: {
-    },
+    scales: {},
     animation: {
       duration: 0,
     },
@@ -71,13 +63,13 @@ export class DeviceComponent implements OnInit {
     showLine: true,
     scales: {
       x: {
-        type: 'linear', 
+        type: 'linear',
         display: true,
         position: 'bottom',
       },
       y: {
         type: 'linear',
-        display: true, 
+        display: true,
         position: 'bottom',
       },
     },
@@ -95,8 +87,6 @@ export class DeviceComponent implements OnInit {
 
   public y: Array<number>;
 
-  public z: Array<number>;
-
   public frequency: number = 0;
 
   @ViewChild('graphs')
@@ -111,7 +101,6 @@ export class DeviceComponent implements OnInit {
   ) {
     this.x = new Array();
     this.y = new Array();
-    this.z = new Array();
 
     this.firstData$ = new BehaviorSubject([]);
     this.secondData$ = new BehaviorSubject([]);
@@ -130,6 +119,20 @@ export class DeviceComponent implements OnInit {
 
   public rmsVoltageCH1: number = 0;
   public rmsVoltageCH2: number = 0;
+
+  smoothData(x: number[], newMax: number) {
+    const max = Math.max(...x);
+    const min = Math.min(...x);
+
+    const normalized = x.map((value: number) => {
+      return ((value - min) / (max - min) - 0.5) * newMax;
+    });
+
+    const convolve_window_size = 40;
+    const smoothedData = smooth(normalized, convolve_window_size);
+
+    return smoothedData;
+  }
 
   async start() {
     await this.device.open();
@@ -171,57 +174,14 @@ export class DeviceComponent implements OnInit {
 
       this.x = new Array(pointsCH1.length - jump);
       this.y = new Array(pointsCH2.length - jump);
-      this.z = new Array(pointsCH1.length - jump);
-
-      var max = {} as any;
-      var min = {} as any;
 
       for (let i = 0; i < this.x.length; i++) {
         this.x[i] = pointsCH1.readInt8(i + jump);
-
-        if (max.ch1 == undefined) {
-          max.ch1 = this.x[i];
-        }
-
-        if (min.ch1 == undefined) {
-          min.ch1 = this.x[i];
-        }
-
-        if (this.x[i] > max.ch1) {
-          max.ch1 = this.x[i];
-        }
-
-        if (this.x[i] < min.ch1) {
-          min.ch1 = this.x[i];
-        }
-
         this.y[i] = pointsCH2.readInt8(i + jump);
-
-        if (max.ch2 == undefined) {
-          max.ch2 = this.y[i];
-        }
-
-        if (min.ch2 == undefined) {
-          min.ch2 = this.y[i];
-        }
-
-        if (this.y[i] > max.ch2) {
-          max.ch2 = this.y[i];
-        }
-
-        if (this.y[i] < min.ch2) {
-          min.ch2 = this.y[i];
-        }
-
-        this.z[i] = i;
       }
 
-      for (let i = 0; i < this.x.length; i++) {
-        this.x[i] =
-          ((this.x[i] - min.ch1) / (max.ch1 - min.ch1) - 0.5) * voltageCH1;
-        this.y[i] =
-          ((this.y[i] - min.ch2) / (max.ch2 - min.ch2) - 0.5) * voltageCH2;
-      }
+      this.x = this.smoothData(this.x, voltageCH1);
+      this.y = this.smoothData(this.y, voltageCH2);
 
       const I = this.eletricalCurrent;
       var group = [];
@@ -235,9 +195,7 @@ export class DeviceComponent implements OnInit {
 
       this.thirdData$.next([
         {
-          label: `Canal 1 x Canal 2 (Área: ${this.calcPolygonArea(
-            group
-          )} J/m³)`,
+          label: `Canal 1 x Canal 2`,
           data: group,
           pointRadius: 0,
           tension: 0,
@@ -265,9 +223,7 @@ export class DeviceComponent implements OnInit {
           pointRadius: 0,
           tension: 0.5,
           borderWidth: 1.5,
-          label: `B x H (Área: ${this.calcPolygonArea(
-            group
-          )} J/m³)    (H_MAX: ${Math.max(...H).toFixed(
+          label: `B x H (H_MAX: ${Math.max(...H).toFixed(
             2
           )} A/m B_MAX: ${Math.max(...B).toFixed(3)} T)`,
           spanGaps: false,
@@ -313,7 +269,7 @@ export class DeviceComponent implements OnInit {
       ]);
 
       this._changeDetectorRef.detectChanges();
-      await this.sleep(10);
+      await this.sleep(1000);
     }
   }
 
@@ -410,7 +366,7 @@ export class DeviceComponent implements OnInit {
       }
     }
 
-    return max;
+    return max ? max : 0;
   }
 
   minValue(arr: Array<number>) {
@@ -600,22 +556,6 @@ export class DeviceComponent implements OnInit {
       },
       false
     );
-  }
-
-  calcPolygonArea(vertices: any) {
-    var total = 0;
-
-    for (var i = 0, l = vertices.length; i < l; i++) {
-      var addX = vertices[i].x;
-      var addY = vertices[i == vertices.length - 1 ? 0 : i + 1].y;
-      var subX = vertices[i == vertices.length - 1 ? 0 : i + 1].x;
-      var subY = vertices[i].y;
-
-      total += addX * addY * 0.5;
-      total -= subX * subY * 0.5;
-    }
-
-    return Math.abs(total).toFixed(2);
   }
 
   getBuffer(message: string) {
