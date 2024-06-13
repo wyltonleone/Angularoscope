@@ -180,8 +180,8 @@ export class DeviceComponent implements OnInit {
         this.y[i] = pointsCH2.readInt8(i + jump);
       }
 
-      this.x = this.smoothData(this.x, voltageCH1);
-      this.y = this.smoothData(this.y, voltageCH2);
+      // this.x = this.smoothData(this.x, voltageCH1);
+      // this.y = this.smoothData(this.y, voltageCH2);
 
       const I = this.eletricalCurrent;
       var group = [];
