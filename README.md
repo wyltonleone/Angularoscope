@@ -8,6 +8,10 @@
   <strong>Aplicação web para aquisição, visualização e exportação de dados de um osciloscópio usando WebUSB.</strong>
 </p>
 
+<p align="center">
+  <a href="https://wyltonleone.github.io/angularoscope/">Acessar a aplicação</a>
+</p>
+
 ## Sobre
 
 O Angularoscope foi desenvolvido como um projeto acadêmico no CEFET. A aplicação se comunica diretamente com um osciloscópio conectado por USB, coleta os sinais dos dois canais e apresenta os resultados em tempo real.
