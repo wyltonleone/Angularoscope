@@ -39,8 +39,8 @@ A API WebUSB possui disponibilidade limitada e só funciona em um contexto segur
 Clone o repositório e instale exatamente as versões registradas no `package-lock.json`:
 
 ```bash
-git clone https://github.com/wyltonleone/wyltonleone.github.io.git
-cd wyltonleone.github.io
+git clone https://github.com/wyltonleone/Angularoscope.git
+cd Angularoscope
 npm ci
 npm start
 ```
